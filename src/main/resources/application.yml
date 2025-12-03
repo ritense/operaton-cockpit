@@ -1,0 +1,85 @@
+server:
+  port: 8084
+  servlet.context-path: /operaton
+
+spring:
+  application.name: operaton-cockpit
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: # jdbc:postgresql://localhost/valtimo
+    username: #postgres
+    password: #postgres
+
+operaton.bpm:
+  history-level: audit
+  authorization:
+    enabled: true
+  database:
+    type: postgres
+  webapp:
+    application-path:
+  job-execution:
+    enabled: false
+    deployment-aware: true
+
+
+plugin.identity.keycloak:
+  keycloakIssuerUrl: ${spring.security.oauth2.client.provider.keycloak.issuer-uri}
+  keycloakAdminUrl: #http://localhost/auth/admin/realms/valtimo
+  clientId: ${spring.security.oauth2.client.registration.keycloak.client-id}
+  clientSecret: ${spring.security.oauth2.client.registration.keycloak.client-secret}
+  useEmailAsOperatonUserId: false
+  administratorGroupName: #operaton-admin
+  useUsernameAsOperatonUserId: true
+  disableSSLCertificateValidation: true
+  useGroupPathAsOperatonGroupId: true
+  enforceSubgroupsInGroupQuery: true
+
+# Spring Boot Security OAuth2 SSO
+spring.security.oauth2:
+  client:
+    registration:
+      keycloak:
+        provider: keycloak
+        client-id: #operaton-identity-service
+        client-secret: #secret
+        authorization-grant-type: authorization_code
+        redirect-uri: "{baseUrl}/{action}/oauth2/code/{registrationId}"
+        scope: openid, profile, email
+    provider:
+      keycloak:
+        issuer-uri: #http://localhost/auth/realms/valtimo
+        authorization-uri: ${spring.security.oauth2.client.provider.keycloak.issuer-uri}/protocol/openid-connect/auth
+        user-info-uri: ${spring.security.oauth2.client.provider.keycloak.issuer-uri}/protocol/openid-connect/userinfo
+        token-uri: ${spring.security.oauth2.client.provider.keycloak.issuer-uri}/protocol/openid-connect/token
+        jwk-set-uri: ${spring.security.oauth2.client.provider.keycloak.issuer-uri}/protocol/openid-connect/certs
+        # set user-name-attribute one of:
+        # - sub                -> default; using keycloak ID as operaton user ID
+        # - email              -> useEmailAsOperatonUserId=true
+        # - preferred_username -> useUsernameAsOperatonUserId=true
+        user-name-attribute: preferred_username
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+
+management:
+  endpoints:
+    web:
+      base-path: /management
+      exposure:
+        include: [ "health", "info" ]
+    jmx:
+      exposure:
+        exclude: "*"
+  endpoint:
+    health:
+      show-details: when_authorized
+  info:
+    git:
+      mode: simple
+      enabled: true
+    build:
+      enabled: true
+    env:
+      enabled: true
