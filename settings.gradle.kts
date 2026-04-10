@@ -5,6 +5,8 @@ pluginManagement {
     val springDependencyManagementVersion: String by settings
     val ideaExt: String by settings
     val dotenvVersion: String by settings
+    val dockerComposePluginVersion: String by settings
+    val gitPropertiesVersion: String by settings
 
     plugins {
         // Idea
@@ -22,6 +24,8 @@ pluginManagement {
         kotlin("plugin.allopen") version kotlinVersion
 
         id("co.uzzu.dotenv.gradle") version dotenvVersion
+        id("com.avast.gradle.docker-compose") version dockerComposePluginVersion
+        id("com.gorylenko.gradle-git-properties") version gitPropertiesVersion
     }
 }
 

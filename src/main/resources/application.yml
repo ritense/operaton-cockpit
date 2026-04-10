@@ -6,9 +6,9 @@ spring:
   application.name: operaton-cockpit
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: # jdbc:postgresql://localhost/valtimo
-    username: #postgres
-    password: #postgres
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost/operaton}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
 
 operaton.bpm:
   history-level: audit
@@ -25,11 +25,11 @@ operaton.bpm:
 
 plugin.identity.keycloak:
   keycloakIssuerUrl: ${spring.security.oauth2.client.provider.keycloak.issuer-uri}
-  keycloakAdminUrl: #http://localhost/auth/admin/realms/valtimo
+  keycloakAdminUrl: ${KEYCLOAK_ADMIN_URL:http://localhost:8081/auth/admin/realms/operaton}
   clientId: ${spring.security.oauth2.client.registration.keycloak.client-id}
   clientSecret: ${spring.security.oauth2.client.registration.keycloak.client-secret}
   useEmailAsOperatonUserId: false
-  administratorGroupName: #operaton-admin
+  administratorGroupName: ${KEYCLOAK_ADMIN_GROUP:operaton-admin}
   useUsernameAsOperatonUserId: true
   disableSSLCertificateValidation: true
   useGroupPathAsOperatonGroupId: true
@@ -41,14 +41,14 @@ spring.security.oauth2:
     registration:
       keycloak:
         provider: keycloak
-        client-id: #operaton-identity-service
-        client-secret: #secret
+        client-id: ${KEYCLOAK_CLIENT_ID:operaton-cockpit}
+        client-secret: ${KEYCLOAK_CLIENT_SECRET:ThisIsNotASecret}
         authorization-grant-type: authorization_code
         redirect-uri: "{baseUrl}/{action}/oauth2/code/{registrationId}"
         scope: openid, profile, email
     provider:
       keycloak:
-        issuer-uri: #http://localhost/auth/realms/valtimo
+        issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/auth/realms/operaton}
         authorization-uri: ${spring.security.oauth2.client.provider.keycloak.issuer-uri}/protocol/openid-connect/auth
         user-info-uri: ${spring.security.oauth2.client.provider.keycloak.issuer-uri}/protocol/openid-connect/userinfo
         token-uri: ${spring.security.oauth2.client.provider.keycloak.issuer-uri}/protocol/openid-connect/token

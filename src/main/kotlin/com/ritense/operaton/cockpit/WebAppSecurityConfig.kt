@@ -43,12 +43,17 @@ class WebAppSecurityConfig @Autowired constructor(
             .authorizeHttpRequests { requests ->
                 requests
                     .requestMatchers(
-                        antMatcher("/assets/**"),
-                        antMatcher("/app/welcome/**"),
+                        antMatcher("/api/admin/**"),
+                        antMatcher("/api/cockpit/**"),
+                        antMatcher("/api/engine/**"),
+                        antMatcher("/api/tasklist/**"),
+                        antMatcher("/api/welcome/**"),
                         antMatcher("/app/admin/**"),
                         antMatcher("/app/cockpit/**"),
                         antMatcher("/app/tasklist/**"),
-                        antMatcher("/api/**"),
+                        antMatcher("/app/welcome/**"),
+                        antMatcher("/assets/**"),
+                        antMatcher("/favicon.ico"),
                         antMatcher("/lib/**")
                     )
                     .authenticated()
