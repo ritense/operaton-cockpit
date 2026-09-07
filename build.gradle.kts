@@ -1,6 +1,7 @@
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
 val operatonVersion: String by project
+val operatonKeycloakVersion: String by project
 val kotlinLoggingVersion: String by project
 val postgresqlDriverVersion: String by project
 
@@ -76,7 +77,7 @@ dependencies {
     implementation("org.postgresql:postgresql:$postgresqlDriverVersion")
 
 
-    implementation("org.operaton.bpm.extension:operaton-keycloak:$operatonVersion")
+    implementation("org.operaton.bpm.extension:operaton-keycloak:$operatonKeycloakVersion")
 
     // JAXB runtime required by Jersey for WADL serialization
     implementation("org.glassfish.jaxb:jaxb-runtime")
