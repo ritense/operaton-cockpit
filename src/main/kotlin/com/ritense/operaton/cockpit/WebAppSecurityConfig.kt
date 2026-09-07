@@ -15,6 +15,7 @@ import org.springframework.security.config.annotation.web.configurers.CsrfConfig
 import org.springframework.security.config.annotation.web.configurers.LogoutConfigurer
 import org.springframework.security.config.annotation.web.configurers.oauth2.client.OAuth2LoginConfigurer
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher
 import org.springframework.web.context.request.RequestContextListener
 import org.springframework.web.filter.ForwardedHeaderFilter
@@ -39,6 +40,7 @@ class WebAppSecurityConfig @Autowired constructor(
                         antMatcher("/api/**"),
                         antMatcher("/engine-rest/**")
                     )
+                csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
             }
             .authorizeHttpRequests { requests ->
                 requests
