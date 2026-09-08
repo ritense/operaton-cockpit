@@ -1,4 +1,4 @@
-FROM gradle:8.13-jdk21 as builder
+FROM gradle:8.14-jdk21 as builder
 WORKDIR /app
 COPY . .
 RUN gradle bootJar
