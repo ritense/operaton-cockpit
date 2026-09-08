@@ -24,8 +24,8 @@ class KeycloakLogoutHandler(
 
     override fun onLogoutSuccess(
         request: HttpServletRequest,
-        response: HttpServletResponse?,
-        authentication: Authentication
+        response: HttpServletResponse,
+        authentication: Authentication?
     ) {
         logger.debug { "Logging out via Keycloak OIDC end_session_endpoint" }
         delegate.onLogoutSuccess(request, response, authentication)
