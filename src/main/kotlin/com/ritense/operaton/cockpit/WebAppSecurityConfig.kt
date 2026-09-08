@@ -23,7 +23,7 @@ import org.springframework.web.filter.ForwardedHeaderFilter
  * Operaton Web application SSO configuration for usage with KeycloakIdentityProviderPlugin.
  */
 @ConditionalOnMissingClass("org.springframework.test.context.junit.jupiter.SpringExtension")
-@EnableWebSecurity(debug = true)
+@EnableWebSecurity
 @Configuration
 class WebAppSecurityConfig @Autowired constructor(
     private val keycloakLogoutHandler: KeycloakLogoutHandler,
