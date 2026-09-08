@@ -18,7 +18,6 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository
 import org.springframework.web.context.request.RequestContextListener
 import org.springframework.web.filter.ForwardedHeaderFilter
 
-
 /**
  * Operaton Web application SSO configuration for usage with KeycloakIdentityProviderPlugin.
  */
