@@ -81,6 +81,11 @@ dependencies {
 
     // JAXB runtime required by Jersey for WADL serialization
     implementation("org.glassfish.jaxb:jaxb-runtime")
+
+    // Spin serializers, required to read process variables stored as spin://application/json or
+    // spin://application/xml (e.g. by Valtimo). Without them Cockpit fails with ENGINE-03040.
+    runtimeOnly("org.operaton.bpm:operaton-engine-plugin-spin:$operatonVersion")
+    runtimeOnly("org.operaton.spin:operaton-spin-dataformat-all:$operatonVersion")
 }
 
 dockerCompose {
