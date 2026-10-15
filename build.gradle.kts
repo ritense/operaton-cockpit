@@ -54,7 +54,12 @@ kotlin {
 }
 
 group = "com.ritense"
-version = "0.0.1-SNAPSHOT"
+// CI passes -PreleaseVersion=X.Y.Z[-SNAPSHOT]; local builds stay on the default
+version = (findProperty("releaseVersion") as String?) ?: "0.0.1-SNAPSHOT"
+
+springBoot {
+    buildInfo()
+}
 
 repositories {
     mavenCentral()
