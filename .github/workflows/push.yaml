@@ -2,6 +2,16 @@ name: Build and Push Docker Image on Push
 
 on:
     workflow_dispatch:
+        inputs:
+            version:
+                description: 'Version to publish, X.Y.Z (no "v" prefix)'
+                required: true
+                type: string
+            snapshot:
+                description: 'Publish as X.Y.Z-SNAPSHOT (any branch, no git tag or GitHub Release). Untick for a real release from main.'
+                required: true
+                type: boolean
+                default: true
 
 env:
     GITHUB_REGISTRY: ghcr.io
@@ -12,24 +22,63 @@ jobs:
     build:
         runs-on: ubuntu-latest
         outputs:
-            tagToDeploy: ${{ steps.prep.outputs.image_tag }}
+            version: ${{ steps.prep.outputs.version }}
+            majorMinor: ${{ steps.prep.outputs.major_minor }}
+            isSnapshot: ${{ steps.prep.outputs.is_snapshot }}
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
-            - name: 'Generate unique docker tag to deploy'
+            - name: 'Validate version'
               id: prep
+              env:
+                  INPUT_VERSION: ${{ inputs.version }}
+                  INPUT_SNAPSHOT: ${{ inputs.snapshot }}
               run: |
-                  branch=${GITHUB_REF##*/}
-                  sha=${GITHUB_SHA::8}
-                  ts=$(date +'%Y%m%d%H%M')
-                  echo "image_tag=${branch}-${ts}-${sha}" >> "$GITHUB_OUTPUT"
+                  set -euo pipefail
+                  version="${INPUT_VERSION}"
+
+                  if ! [[ "${version}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+                    echo "::error::Version '${version}' is not a valid X.Y.Z semver version (no 'v' prefix, no suffix)."
+                    exit 1
+                  fi
+
+                  if [ "${INPUT_SNAPSHOT}" != "true" ]; then
+                    if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+                      echo "::error::Releases can only be published from main (running on ${GITHUB_REF}). Tick 'snapshot' to publish from another branch."
+                      exit 1
+                    fi
+                    if git rev-parse -q --verify "refs/tags/v${version}" > /dev/null; then
+                      echo "::error::Tag v${version} already exists."
+                      exit 1
+                    fi
+                  fi
+
+                  latest=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' | sed 's/^v//' | sort -V | tail -n 1)
+                  if [ -n "${latest}" ]; then
+                    highest=$(printf '%s\n%s\n' "${latest}" "${version}" | sort -V | tail -n 1)
+                    if [ "${latest}" = "${version}" ] || [ "${highest}" != "${version}" ]; then
+                      echo "::error::Version ${version} must be greater than the latest release ${latest}."
+                      exit 1
+                    fi
+                  fi
+
+                  if [ "${INPUT_SNAPSHOT}" = "true" ]; then
+                    echo "version=${version}-SNAPSHOT" >> "$GITHUB_OUTPUT"
+                    echo "is_snapshot=true" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "version=${version}" >> "$GITHUB_OUTPUT"
+                    echo "is_snapshot=false" >> "$GITHUB_OUTPUT"
+                  fi
+                  echo "major_minor=${version%.*}" >> "$GITHUB_OUTPUT"
 
     deploy:
       runs-on: ubuntu-latest
       needs: [ build ]
       permissions:
-          contents: read
+          contents: write
           packages: write
           id-token: write
       steps:
@@ -53,7 +102,11 @@ jobs:
               uses: docker/metadata-action@v4.4.0
               with:
                   images: ${{ env.GITHUB_REGISTRY }}/${{ env.GITHUB_NAMESPACE }}/${{ env.DOCKER_IMAGE_NAME }}
-                  tags: type=raw,value=${{ needs.build.outputs.tagToDeploy }}
+                  flavor: latest=false
+                  tags: |
+                      type=raw,value=${{ needs.build.outputs.version }}
+                      type=raw,value=${{ needs.build.outputs.majorMinor }},enable=${{ needs.build.outputs.isSnapshot == 'false' }}
+                      type=raw,value=latest,enable=${{ needs.build.outputs.isSnapshot == 'false' }}
           -   name: Build and push Docker image
               uses: docker/build-push-action@v6
               id: build-and-push
@@ -63,6 +116,7 @@ jobs:
                   context: .
                   push: true
                   tags: ${{ steps.docker_meta.outputs.tags }}
+                  build-args: RELEASE_VERSION=${{ needs.build.outputs.version }}
           -   name: Sign the images with GitHub OIDC Token
               env:
                   DIGEST: ${{ steps.build-and-push.outputs.digest }}
@@ -75,7 +129,16 @@ jobs:
                   cosign sign --yes ${images}
           -   name: Verify the images
               run: |
-                  branch=${GITHUB_REF##*/}
-                  cosign verify ${{ env.GITHUB_REGISTRY }}/${{ env.GITHUB_NAMESPACE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.build.outputs.tagToDeploy }} \
-                     --certificate-identity https://github.com/${{ env.GITHUB_NAMESPACE }}/${{ env.DOCKER_IMAGE_NAME }}/.github/workflows/push.yaml@refs/heads/${branch} \
+                  cosign verify ${{ env.GITHUB_REGISTRY }}/${{ env.GITHUB_NAMESPACE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.build.outputs.version }} \
+                     --certificate-identity https://github.com/${{ env.GITHUB_NAMESPACE }}/${{ env.DOCKER_IMAGE_NAME }}/.github/workflows/push.yaml@${GITHUB_REF} \
                      --certificate-oidc-issuer https://token.actions.githubusercontent.com | jq
+          -   name: Create git tag and GitHub Release
+              if: needs.build.outputs.isSnapshot == 'false'
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  gh release create "v${{ needs.build.outputs.version }}" \
+                     --repo "${{ github.repository }}" \
+                     --target "${GITHUB_SHA}" \
+                     --title "v${{ needs.build.outputs.version }}" \
+                     --generate-notes

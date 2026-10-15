@@ -1,7 +1,8 @@
 FROM gradle:8.14-jdk21 as builder
 WORKDIR /app
 COPY . .
-RUN gradle bootJar
+ARG RELEASE_VERSION
+RUN gradle bootJar ${RELEASE_VERSION:+-PreleaseVersion=$RELEASE_VERSION}
 
 FROM eclipse-temurin:21-jdk-alpine as prod
 WORKDIR /app
